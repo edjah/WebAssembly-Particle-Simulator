@@ -100,8 +100,15 @@ void update_positions(double dt) {
     // update forces
     for (size_t i = 0; i < particles.size(); ++i) {
         Particle& p1 = particles[i];
+        if (p1.mass == 0) {
+            continue;
+        }
+
         for (size_t j = i + 1; j < particles.size(); ++j) {
             Particle& p2 = particles[j];
+            if (p2.mass == 0) {
+                continue;
+            }
 
             Vector diff = p1.position - p2.position;
 
@@ -127,8 +134,35 @@ void update_positions(double dt) {
 
 void collide(Particle& p1, Particle &p2, double dt) {
     if (absorb_mode) {
-        // TODO: absorb mode
-        printf("TODO: need to implment absorb mode collisions\n");
+        // a very hacky but simple way of implemenenting absorb mode.
+        // simply set the mass of the smaller particle to 0 so that it won't
+        // be considered again in subsequent calculations
+        // TODO: do the dead particles incur a significant performance overhead?
+        if (p1.mass < p2.mass) {
+            std::swap(p1, p2);
+        }
+
+        // weighted average of position and momentum
+        Vector center_of_mass = p1.position * p1.mass + p2.position * p2.mass;
+        Vector net_momentum = p1.velocity * p1.mass + p2.velocity * p2.mass;
+        p1.position = center_of_mass / (p1.mass + p2.mass);
+        p1.velocity = net_momentum / (p1.mass + p2.mass);
+
+        // also compute a weighted average of color :O
+        int r1 = p1.color >> 16, g1 = (p1.color >> 8) % 256, b1 = p1.color % 256;
+        int r2 = p2.color >> 16, g2 = (p2.color >> 8) % 256, b2 = p2.color % 256;
+
+        int red = (r1 * p1.mass + r2 * p2.mass) / (p1.mass + p2.mass);
+        int green = (g1 * p1.mass + g2 * p2.mass) / (p1.mass + p2.mass);
+        int blue = (b1 * p1.mass + b2 * p2.mass) / (p1.mass + p2.mass);
+        p1.color = (red << 16) + (green << 8) + blue;
+
+        p1.mass += p2.mass;
+        p1.radius = sqrt(p1.mass);
+        p2.mass = 0;
+        p2.radius = 0;
+
+        return;
     }
 
     Vector direction = (p1.position - p2.position).unit_vector();
@@ -156,8 +190,15 @@ void calculate_collisions(double dt) {
     // only supporting collisions of 2 items at a time. no multiparticle
     for (size_t i = 0; i < particles.size(); ++i) {
         Particle& p1 = particles[i];
+        if (p1.mass == 0) {
+            continue;
+        }
+
         for (size_t j = i + 1; j < particles.size(); ++j) {
             Particle& p2 = particles[j];
+            if (p2.mass == 0) {
+                continue;
+            }
 
             Vector diff = (p1.position - p2.position);
             if (diff.norm() < p1.radius + p2.radius) {

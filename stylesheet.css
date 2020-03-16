@@ -2,6 +2,7 @@ body {
     margin: 0px;
     font-family: monospace;
     color: white;
+    overflow-y: hidden;
 }
 
 #simulator {
@@ -15,6 +16,7 @@ body {
     min-width: 200px;
     width: 200px;
     background-color: #555;
+    overflow-y: auto;
 }
 
 #instructions ol {

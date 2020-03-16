@@ -223,8 +223,13 @@ Module.onRuntimeInitialized = function() {
       let green = (color >>> 8) % 256
       let blue = color % 256;
 
-      // add the physical coordinates onto the trail
-      particleTrails[i].push([px_phys, py_phys]);
+      // add the physical coordinates onto the trail.
+      // remove from the trail if the particle doesn't appear on screen
+      if (radius === 0) {
+        particleTrails[i].pop();
+      } else {
+        particleTrails[i].push([px_phys, py_phys]);
+      }
 
       // draw the circle
       ctx.beginPath();
